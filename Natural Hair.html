@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NHP Naturals — Interactive Single File</title>
+  <!-- External libs: Alpine for tiny reactive helpers, Leaflet for maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2u6S6Gk6b3gqvNqDk2gY2sGkQKx0zq2vZ6bM9ow=" crossorigin=""/>
+  <script defer src="https://unpkg.com/alpinejs@3.12.0/dist/cdn.min.js"></script>
+  <style>
+    :root{--accent:#0b7a5f;--accent-2:#1e90b8;--bg:#f8f9fa;--text:#222}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial;margin:0;color:var(--text);background:linear-gradient(180deg,#f8fff7,#eafbf0);-webkit-font-smoothing:antialiased}
+    .container{max-width:1100px;margin:0 auto;padding:20px}
+    header{border-bottom:1px solid rgba(0,0,0,0.05);background:transparent}
+    .header-inner{display:flex;align-items:center;justify-content:space-between}
+    .brand{font-weight:700;color:var(--accent);text-decoration:none;font-size:1.25rem}
+    nav ul{list-style:none;margin:0;padding:0;display:flex;gap:16px}
+    nav a{text-decoration:none;color:inherit;padding:8px 10px;border-radius:8px}
+
+    /* Hero */
+    .hero{padding:48px 0;text-align:center}
+    .hero h1{font-size:2rem;margin:0 0 8px;opacity:0;transform:translateY(8px);animation:fadeInUp .6s .1s forwards}
+    .hero p{margin:0 0 16px;opacity:0;transform:translateY(8px);animation:fadeInUp .6s .2s forwards}
+    @keyframes fadeInUp{to{opacity:1;transform:none}}
+
+    .btn{display:inline-block;background:var(--accent-2);color:white;padding:10px 16px;border-radius:8px;text-decoration:none;border:none;cursor:pointer;transition:transform .12s ease}
+    .btn:active{transform:scale(.99)}
+    .btn-outline{background:transparent;color:var(--accent-2);border:1px solid rgba(30,144,184,0.2)}
+
+    /* grid features */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+    .card{background:white;padding:12px;border-radius:10px;box-shadow:0 8px 24px rgba(13,21,23,0.06);overflow:hidden}
+    .card img{width:100%;height:160px;object-fit:cover;border-radius:8px}
+
+    /* tabs */
+    .tabs{display:flex;gap:8px;margin-bottom:12px}
+    .tab{padding:8px 12px;border-radius:8px;background:#fff;border:1px solid transparent;cursor:pointer}
+    .tab.active{background:linear-gradient(90deg,#ffffff,#f3feff);border-color:rgba(30,144,184,0.12);box-shadow:0 6px 18px rgba(0,0,0,0.03)}
+
+    /* accordion */
+    .accordion-item{border-bottom:1px solid #eee}
+    .accordion-header{padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+    .accordion-body{padding:0 12px 12px;max-height:0;overflow:hidden;transition:max-height .28s ease}
+    .accordion-body.open{max-height:400px}
+
+    /* modal / lightbox */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:60;opacity:0;pointer-events:none;transition:opacity .18s}
+    .overlay.open{opacity:1;pointer-events:auto}
+    .modal{background:white;padding:18px;border-radius:10px;max-width:900px;width:95%;max-height:90vh;overflow:auto}
+
+    /* gallery */
+    .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+    .gallery img{width:100%;height:120px;object-fit:cover;border-radius:8px;cursor:pointer;transition:transform .12s}
+    .gallery img:hover{transform:scale(1.03)}
+
+    /* map */
+    #map{height:300px;border-radius:10px}
+
+    /* search */
+    .searchbar{display:flex;gap:8px;margin:12px 0}
+    .searchbar input,.searchbar select{padding:8px;border-radius:8px;border:1px solid #ddd}
+
+    footer{text-align:center;padding:28px 12px;color:#666}
+
+    @media(max-width:800px){.header-inner{flex-direction:column;gap:12px}.hero{padding:28px 12px}.card img{height:140px}}
+  </style>
+</head>
+<body x-data>
+  <header>
+    <div class="container header-inner">
+      <a class="brand" href="#home">NHP <span>Naturals</span></a>
+      <nav>
+        <ul>
+          <li><a href="#products">Products</a></li>
+          <li><a href="#gallery">Gallery</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="home" class="hero">
+      <h1>Nurturing Your Wellbeing — interactively</h1>
+      <p>Explore products, view our locations, and interact with dynamic content — built with modern JS techniques.</p>
+      <p>
+        <a class="btn" href="#products">Browse Products</a>
+        <a class="btn btn-outline" href="#gallery">Open Gallery</a>
+      </p>
+    </section>
+
+    <!-- Tabs for different content zones -->
+    <section aria-labelledby="features">
+      <h2 id="features">Quick Features</h2>
+      <div x-data="tabsComponent()">
+        <div class="tabs">
+          <button class="tab" :class="{ 'active': active==='products' }" @click="active='products'">Products</button>
+          <button class="tab" :class="{ 'active': active==='faqs' }" @click="active='faqs'">FAQs</button>
+          <button class="tab" :class="{ 'active': active==='map' }" @click="active='map'">Our Location</button>
+        </div>
+
+        <div x-show="active==='products'" x-transition>
+          <!-- Search, sort, dynamic product loading -->
+          <div class="searchbar">
+            <input x-model="query" @input.debounce.250ms="filterProducts" placeholder="Search products..." />
+            <select x-model="sortBy" @change="filterProducts">
+              <option value="default">Sort: Default</option>
+              <option value="price-asc">Price ↑</option>
+              <option value="price-desc">Price ↓</option>
+              <option value="name-asc">Name A→Z</option>
+              <option value="name-desc">Name Z→A</option>
+            </select>
+          </div>
+
+          <template x-if="filtered.length===0">
+            <p>No products found.</p>
+          </template>
+
+          <div class="grid" role="list">
+            <template x-for="product in filtered" :key="product.id">
+              <article class="card" role="listitem">
+                <img :src="product.image" :alt="product.name" @click="openModal(product)" />
+                <h3 x-text="product.name"></h3>
+                <p x-text="product.short"></p>
+                <p><strong x-text="formatPrice(product.price)"></strong></p>
+                <p><button class="btn" @click="openModal(product)">Details</button></p>
+              </article>
+            </template>
+          </div>
+        </div>
+
+        <div x-show="active==='faqs'" x-transition>
+          <h3>Frequently Asked Questions</h3>
+          <div class="card">
+            <div class="accordion-item" x-data="{open:false}">
+              <div class="accordion-header" @click="open=!open">
+                <strong>Are your products cruelty-free?</strong>
+                <span x-text="open ? '-' : '+'"></span>
+              </div>
+              <div class="accordion-body" :class="open?'open':''">
+                <p>Yes — we never test on animals and work with ethical suppliers.</p>
+              </div>
+            </div>
+
+            <div class="accordion-item" x-data="{open:false}">
+              <div class="accordion-header" @click="open=!open">
+                <strong>Do you ship internationally?</strong>
+                <span x-text="open ? '-' : '+'"></span>
+              </div>
+              <div class="accordion-body" :class="open?'open':''">
+                <p>We ship to selected countries. Contact us for details and rates.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div x-show="active==='map'" x-transition>
+          <h3>Our Location</h3>
+          <div id="map" class="card"></div>
+          <p style="margin-top:8px;color:#555">Marker near: 1566 Chartwell Dr, West Vancouver, BC (approx.)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery with lightbox modal -->
+    <section id="gallery" style="margin-top:28px">
+      <h2>Gallery</h2>
+      <div class="gallery" id="galleryGrid">
+        <!-- images populated by JS dynamically -->
+      </div>
+    </section>
+
+    <!-- Contact + mini map -->
+    <section id="contact" style="margin-top:28px" class="container">
+      <h2>Contact</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Contact Info</h3>
+          <p><strong>Address:</strong> 1566 Chartwell Dr, West Vancouver, BC V7S 2S1</p>
+          <p><strong>Phone:</strong> +27 71 182 6344</p>
+          <p><strong>Email:</strong> <a href="mailto:nhp@nhpnaturals.com">nhp@nhpnaturals.com</a></p>
+        </div>
+        <div class="card">
+          <h3>Send a message</h3>
+          <form id="contactForm">
+            <label>Name</label>
+            <input name="name" required />
+            <label>Email</label>
+            <input name="email" type="email" required />
+            <label>Message</label>
+            <textarea name="message" rows="4" required></textarea>
+            <p><button class="btn" type="submit">Send Message</button></p>
+            <p id="formNote" style="font-size:.9rem;color:#555"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal container used for product details and gallery lightbox -->
+  <div id="overlay" class="overlay" @click.away="closeOverlay()" x-data="overlayComponent()" :class="open ? 'open' : ''" x-show="open" x-transition>
+    <div class="modal" x-html="content"></div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 NHP Naturals — Interactive demo.</p>
+  </footer>
+
+  <!-- Leaflet + app script -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7f8g4wGk1kYgYf0C2q7Q4j2QZ2y+f8Y/8S0k+M=" crossorigin=""></script>
+  <script>
+    // Alpine component: tabs + products data loader
+    function tabsComponent(){
+      return {
+        active: 'products',
+        products: [],
+        filtered: [],
+        query: '',
+        sortBy: 'default',
+        modalOpen: false,
+        modalContent: '',
+        async init(){
+          // Simulate loading product data (could be fetch to /api/products)
+          this.products = await loadProducts();
+          this.filtered = this.products.slice();
+        },
+        filterProducts(){
+          const q = this.query.trim().toLowerCase();
+          let list = this.products.filter(p => p.name.toLowerCase().includes(q) || p.short.toLowerCase().includes(q));
+          switch(this.sortBy){
+            case 'price-asc': list.sort((a,b)=>a.price-b.price); break;
+            case 'price-desc': list.sort((a,b)=>b.price-a.price); break;
+            case 'name-asc': list.sort((a,b)=>a.name.localeCompare(b.name)); break;
+            case 'name-desc': list.sort((a,b)=>b.name.localeCompare(a.name)); break;
+          }
+          this.filtered = list;
+        },
+        openModal(product){
+          // Use global overlay component
+          const overlay = document.querySelector('[x-data="overlayComponent()"]');
+          // Build HTML for product
+          const html = `
+            <div style=\"display:flex;gap:14px;flex-wrap:wrap\">
+              <img src=\"${product.image}\" style=\"width:260px;height:180px;object-fit:cover;border-radius:8px\"/>
+              <div>
+                <h2>${product.name}</h2>
+                <p>${product.long}</p>
+                <p><strong>Price: ${formatPrice(product.price)}</strong></p>
+                <p><button class=\"btn\" onclick=\"window.dispatchEvent(new CustomEvent('closeOverlay'))\">Close</button></p>
+              </div>
+            </div>`;
+          window.showOverlay(html);
+        },
+        formatPrice(p){ return formatPrice(p) }
+      }
+    }
+
+    // Overlay component (modal & lightbox)
+    function overlayComponent(){
+      return {
+        open:false,
+        content:'',
+        init(){
+          window.showOverlay = (html)=>{ this.content = html; this.open=true }
+          window.closeOverlay = ()=>{ this.open=false }
+          window.addEventListener('closeOverlay', ()=> this.open=false)
+          window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') this.open=false })
+        },
+        closeOverlay(){ this.open=false }
+      }
+    }
+
+    // Utility to format price
+    function formatPrice(p){ return (typeof p === 'number') ? 'R ' + p.toFixed(2) : p }
+
+    // Simulated product loader (would be a fetch to your API)
+    async function loadProducts(){
+      // simulate async latency
+      await new Promise(r=>setTimeout(r,120));
+      return [
+        {id:1, name:'Pure Jojoba Oil', short:'Lightweight nourishing oil', long:'A multipurpose jojoba oil... great for scalp and hair.', price:129.99, image:'https://i.pinimg.com/736x/0d/f0/d4/0df0d488223057337431704c6ffa75a5.jpg'},
+        {id:2, name:'Daily Moisturizer', short:'For dryness & softness', long:'Hydrating daily formula to retain moisture and reduce breakage.', price:89.50, image:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhHXMYB-rajvYTQAB8tm9jIN0dsN-siuSN8g&s'},
+        {id:3, name:'Herbal Wash', short:'Gentle, clarifying wash', long:'Plant-derived surfactants and herbal extracts soothe the scalp.', price:74.00, image:'https://via.placeholder.com/600x400?text=Herbal+Wash'},
+        {id:4, name:'Nourishing Balm', short:'Seal and protect', long:'A balm rich in butters and ceramides to seal moisture.', price:159.00, image:'https://via.placeholder.com/600x400?text=Nourishing+Balm'}
+      ];
+    }
+
+    // Create gallery images dynamically and attach lightbox behavior
+    (function(){
+      const galleryImages = [
+        'https://i.pinimg.com/736x/0d/f0/d4/0df0d488223057337431704c6ffa75a5.jpg',
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhHXMYB-rajvYTQAB8tm9jIN0dsN-siuSN8g&s',
+        'https://via.placeholder.com/800x600?text=Product+3',
+        'https://via.placeholder.com/800x600?text=Product+4'
+      ];
+      window.addEventListener('DOMContentLoaded', ()=>{
+        // populate gallery
+        const grid = document.getElementById('galleryGrid');
+        galleryImages.forEach((src,i)=>{
+          const img = document.createElement('img'); img.src=src; img.alt='Gallery image '+(i+1);
+          img.addEventListener('click', ()=>{
+            window.showOverlay(`<div style=\"text-align:center\"><img src=\"${src}\" style=\"max-width:90vw;max-height:80vh;object-fit:contain;border-radius:8px\"/><p><button class=\"btn\" onclick=\"window.dispatchEvent(new CustomEvent('closeOverlay'))\">Close</button></p></div>`)
+          })
+          grid.appendChild(img)
+        })
+      })
+    })();
+
+    // Initialize map using Leaflet (centered approximately on West Vancouver coords)
+    function initMap(){
+      const map = L.map('map', {zoomControl:true}).setView([49.3275, -123.1876], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
+      const marker = L.marker([49.3275, -123.1876]).addTo(map).bindPopup('NHP Naturals (approx location)').openPopup();
+    }
+
+    // Contact form handler (simulate submit)
+    document.addEventListener('DOMContentLoaded', function(){
+      // initialize Alpine components manually where needed
+      // Alpine will call init() on our tabs component because it is returned by x-data
+
+      // small delay to let Alpine initialize products
+      setTimeout(()=>{
+        // We need to call init on tabs component instance — easier: trigger a custom event
+        // But alpine's init called automatically for component. If products not loaded, re-run load for demo
+      },300);
+
+      // init map
+      try{ initMap() }catch(e){console.warn('Map initialization failed',e)}
+
+      // contact form
+      const form = document.getElementById('contactForm');
+      const note = document.getElementById('formNote');
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        note.textContent = 'Sending...';
+        const data = new FormData(form);
+        // simulate server call
+        setTimeout(()=>{ note.textContent = 'Thanks '+(data.get('name')||'')+' — message received. We will reply within 2 business days.'; form.reset() }, 700);
+      })
+
+      // Close overlay when custom event dispatched
+      window.addEventListener('closeOverlay', ()=>{
+        const el = document.querySelector('#overlay'); if(el && el.__x) el.__x.$data.open=false
+      })
+    })
+
+    // Expose formatPrice globally so Alpine bindings can use it
+    window.formatPrice = formatPrice;
+  </script>
+</body>
+</html>
